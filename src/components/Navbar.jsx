@@ -10,7 +10,11 @@ const Navbar = () => {
         justifyContent: "center",
       }}
     >
-      <img src={logo} alt="logo" style={{ width: "30%", height: "25%" }} />
+      <img
+        src={logo}
+        alt="logo"
+        style={{ width: "30%", height: "25%", marginTop: "10px" }}
+      />
     </div>
   );
 };
