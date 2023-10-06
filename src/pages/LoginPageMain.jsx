@@ -1,43 +1,8 @@
-import React, { useState } from "react";
-import axios from "axios";
-import qs from "qs";
-import { useNavigate } from "react-router-dom";
-
-const apiUrl =
-  "https://test-api.ab.kg:8443/realms/wallet-watcher/protocol/openid-connect/token";
+import React from "react";
+import { useAuthContext } from "../context/AuthContext";
 
 const LoginPageMain = () => {
-  const [user, setUser] = useState("");
-  const [password, setPassword] = useState("");
-  const navigate = useNavigate();
-
-  const requestData = {
-    grant_type: "password",
-    client_id: "wallet-watch-rest-api",
-    username: user,
-    password: password,
-  };
-
-  async function login(e) {
-    e.preventDefault();
-
-    axios
-      .post(apiUrl, qs.stringify(requestData), {
-        headers: {
-          "Content-Type": "application/x-www-form-urlencoded",
-        },
-      })
-      .then((response) => {
-        const authToken = response.data.access_token;
-        console.log("Authentication Token:", authToken);
-
-        navigate("/room");
-      })
-      .catch((error) => {
-        console.error("Error:", error);
-        alert("ERROR");
-      });
-  }
+  const { user, setUser, password, setPassword, login } = useAuthContext();
 
   return (
     <div className="login-card">
@@ -68,7 +33,7 @@ const LoginPageMain = () => {
           />
         </div>
         <div className="form-group">
-          <input type="submit" value="Войти" />
+          <input type="submit" value="Войти" id="submit" />
         </div>
       </form>
     </div>

@@ -1,119 +1,85 @@
-import { useRef, useState, useEffect, useContext } from "react";
-import AuthContext from "./context/AuthProvider";
-import keycloak from "./api/keycloak";
-import axios from "axios";
-
-//import axios from './api/api';
-const LOGIN_URL = "/auth";
+import React, { useState } from "react";
+import { useNavigate } from "react-router-dom";
 
 const LoginPage = () => {
-  const { setAuth } = useContext(AuthContext);
-  const userRef = useRef();
-  const errRef = useRef();
-
-  const [username, setUsername] = useState("");
+  const [user, setUser] = useState("");
   const [password, setPassword] = useState("");
-  const [errMsg, setErrMsg] = useState("");
-  const [success, setSuccess] = useState(false);
+  const [error, setError] = useState(null);
+  const navigate = useNavigate();
 
-  const qs = require("qs");
-  let data = qs.stringify({
-    grant_type: "password",
-    client_id: "wallet-watch-rest-api",
-    username,
-    password,
-  });
-
-  const config = {
-    headers: {
-      "Content-Type": "application/x-www-form-urlencoded",
-    },
-  };
-
-  useEffect(() => {
-    userRef.current.focus();
-  }, []);
-
-  useEffect(() => {
-    setErrMsg("");
-  }, [username, password]);
-
-  const handleSubmit = async (e) => {
+  async function handleSubmit(e) {
     e.preventDefault();
+    setError(null);
 
     try {
-      const response = await axios.post(
-        "https://test-api.ab.kg:8443/realms/wallet-watcher/protocol/openid-connect/token",
-        data,
-        config
-      );
-
-      // Extract the access token from the response
-      const { access_token } = response.data;
-
-      // Initialize Keycloak with the access token
-      keycloak.init({
-        token: access_token,
-        refreshToken: response.data.refresh_token,
-        idToken: response.data.id_token,
-        onLoad: "login-required",
-      });
-      console.log("Login successful");
-      setSuccess(true);
+      const accessToken = await getToken(user, password);
+      console.log("Access Token:", accessToken);
+      navigate("/room");
     } catch (error) {
-      console.error("Login failed:", error);
+      console.error("Login Error:", error);
+      setError("Login failed. Please check your credentials.");
     }
-  };
+  }
+
+  async function getToken(user, password) {
+    const requestBody = new URLSearchParams();
+    requestBody.append("grant_type", "password");
+    requestBody.append("client_id", "wallet-watch-rest-api");
+    requestBody.append("username", user);
+    requestBody.append("password", password);
+
+    const response = await fetch(
+      "https://test-api.ab.kg:8443/realms/wallet-watcher/protocol/openid-connect/token",
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/x-www-form-urlencoded",
+        },
+        body: requestBody.toString(),
+      }
+    );
+
+    if (!response.ok) {
+      throw new Error(`HTTP Error! Status: ${response.status}`);
+    }
+
+    const result = await response.json();
+    const accessToken = result.access_token;
+    console.log("access", accessToken);
+  }
 
   return (
-    <>
-      {success ? (
-        <section>
-          <h1>You are logged in!</h1>
-          <br />
-          <p>
-            <a href="#">Go to Home</a>
-          </p>
-        </section>
-      ) : (
-        <section>
-          <p
-            ref={errRef}
-            className={errMsg ? "errmsg" : "offscreen"}
-            aria-live="assertive"
-          >
-            {errMsg}
-          </p>
-          <div className="container">
-            <div className="card">
-              <h2>Login</h2>
-              <form onSubmit={handleSubmit}>
-                <label htmlFor="username">Username:</label>
-                <input
-                  type="text"
-                  id="username"
-                  ref={userRef}
-                  autoComplete="off"
-                  onChange={(e) => setUsername(e.target.value)}
-                  value={username}
-                  required
-                />
-
-                <label htmlFor="password">Password:</label>
-                <input
-                  type="password"
-                  id="password"
-                  onChange={(e) => setPassword(e.target.value)}
-                  value={password}
-                  required
-                />
-                <button>Sign In</button>
-              </form>
-            </div>
-          </div>
-        </section>
-      )}
-    </>
+    <div className="login-card">
+      <div className="card-header">
+        <div className="log">Личный кабинет</div>
+      </div>
+      <form id="login-form" onSubmit={handleSubmit}>
+        <div className="form-group">
+          <label htmlFor="username">Имя пользователя</label>
+          <input
+            onChange={(e) => setUser(e.target.value)}
+            name="username"
+            id="username"
+            type="text"
+            required
+          />
+        </div>
+        <div className="form-group">
+          <label htmlFor="password">Пароль</label>
+          <input
+            onChange={(e) => setPassword(e.target.value)}
+            name="password"
+            id="password"
+            type="password"
+            required
+          />
+        </div>
+        {error && <div className="error">{error}</div>}
+        <div className="form-group">
+          <button type="submit">Login</button>
+        </div>
+      </form>
+    </div>
   );
 };
 
